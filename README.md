@@ -1,35 +1,83 @@
 # iMessage Analytics Wrapped
 
-This project analyzes your iMessage data and creates a year-in-review similar to Spotify Wrapped. It provides insights into your messaging habits, including:
+This project analyzes your iMessage data to create a wrap-up similar to Spotify Wrapped, providing deep insights into your messaging patterns and communication style.
 
-- **Message Counts**: Total messages, sent/received breakdown.
-- **Top Words**: Your most frequently used "interesting" words.
-- **Response Times**: Average time taken to read messages.
-- **Top Chats**: Your top 5 most active conversations.
-- **Word Choice Dynamics**: Insights into specific types of word choices and patterns.
+## Important Note
+Currently, the tool analyzes messages from all time instead of just the current year. While the original intention was to provide year-specific analytics like Spotify Wrapped, some users (including the developer) have encountered issues where recent iMessages may not load completely from the local database. If you encounter similar issues, the tool defaults to analyzing your entire message history instead of limiting to the current year.
 
 ## Features
 
-- **Custom Stop Words**: Enhanced analysis with the `nltk` library, incorporating additional stop words tailored to casual text conversations.
-- **Reaction Filtering**: Ignores reactions like "Liked" or "Loved" to focus on meaningful messages.
-- **Detailed Breakdown**: Insight into the dynamics of your most frequent chats.
+### Message Analysis
+* **Message Counts**: Tracks total messages and sent/received ratio with percentage breakdowns
+* **Word Usage**: Analyzes your most frequently used words, filtering out common stop words
+* **Message Length**: Calculates average text length in words
+* **Curse Word Tracking**: Monitors usage of specified curse words
+* **Custom Word Lookup**: Allows users to check frequency of specific words
 
-## Future Plans
+### Sentiment Analysis
+* **Conversation Tone**: Uses VADER sentiment analysis to evaluate message positivity/negativity
+* **Top Contact Rankings**: Ranks your top 10 contacts by message count with sentiment scores
+* **Sentiment Trends**: Labels conversations as Positive, Negative, or Neutral based on average sentiment
 
-- **Sentiment Analysis**: Use natural language processing (NLP) to analyze the tone of your texts and those of your most frequent contacts.
-- **Web App**: Transform this script into a user-friendly web application.
-- **Data Visualization**: Integrate charts and graphs to represent data visually.
-- **Spotify Wrapped-style Summary**: Generate a summary report in a visually appealing format.
+### Technical Features
+* **Smart Filtering**: 
+  * Enhanced stop words list tailored for casual conversations
+  * Reaction filtering to ignore system messages like "Liked" or "Loved"
+  * Minimum word length requirements to focus on meaningful content
 
 ## Prerequisites
+* Python 3.9+
+* Required Python packages:
+  * `sqlite3`
+  * `nltk`
+  * `datetime`
+  * `string`
 
-- **Python 3.9+**
-- **Dependencies**:
-  - `sqlite3`
-  - `nltk`
-  - `datetime`
-  - `string`
+## Installation
 
-Install the required NLTK data by running:
+1. Install required packages:
 ```bash
+pip install nltk
+```
+
+2. Download required NLTK data:
+```python
 python -m nltk.downloader stopwords
+python -m nltk.downloader vader_lexicon
+```
+
+## Future Plans
+* **Enhanced Visualization**: 
+  * Interactive charts and graphs
+  * Timeline views of messaging patterns
+  * Sentiment distribution visualizations
+* **Extended Analysis**:
+  * Response time patterns analysis
+  * Emoji usage tracking
+  * Time-of-day messaging patterns
+* **Platform Development**:
+  * Web application interface
+  * Shareable reports
+  * Spotify Wrapped-style animated presentations
+* **Advanced Analytics**:
+  * Conversation topic modeling
+  * Language style matching analysis
+  * Relationship dynamics insights
+* **Time Period Selection**:
+  * Add reliable year-specific filtering once database access issues are resolved
+  * Options for custom date ranges
+
+## Usage
+The script requires access to your iMessage database located at:
+```
+/Users/{username}/Library/Messages/chat.db
+```
+Replace `{username}` with your system username before running.
+
+## Limitations
+* Current iMessage database access may be incomplete for recent messages on some systems
+* Default behavior analyzes all-time messages instead of year-specific data
+* Analysis accuracy depends on local database completeness
+
+## Note
+This tool is for personal use only. Be mindful of privacy considerations when analyzing message data.

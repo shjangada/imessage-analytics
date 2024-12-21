@@ -1,60 +1,89 @@
 import sqlite3
+import nltk
 from datetime import datetime
+from nltk.sentiment import SentimentIntensityAnalyzer
+from statistics import mean
 
-# username = input("What is your device's username? ")
-username = "shreyajangada"  # for testing purposes
+nltk.download('vader_lexicon')
 
-# Path to iMessage database
+# Initialize VADER sentiment analyzer
+sia = SentimentIntensityAnalyzer()
+
+username = "shreyajangada"
 DB_PATH = f"/Users/{username}/Library/Messages/chat.db"
 
 try:
-    # Connect to the database
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # Calculate timestamp for the start of the year (nanoseconds since 2001-01-01)
+    # Get the start of the current year
     now = datetime.now()
     start_of_year = datetime(now.year, 1, 1)
     start_of_year_timestamp = int((start_of_year - datetime(2001, 1, 1)).total_seconds() * 1e9)
-    
-    # Query for top 5 chats with sent/received breakdown
+
+    # Query to fetch messages grouped by handle.id, from this year
     cursor.execute(
         """
         SELECT 
-            handle.id AS handle, -- Chat identifier (e.g., phone number/email)
-            SUM(CASE WHEN message.is_from_me = 1 THEN 1 ELSE 0 END) AS sent_count, -- Sent messages
-            SUM(CASE WHEN message.is_from_me = 0 THEN 1 ELSE 0 END) AS received_count -- Received messages
+            handle.id AS handle,
+            message.text,
+            message.is_from_me
         FROM 
             message
         JOIN 
             chat_message_join ON message.rowid = chat_message_join.message_id
         JOIN 
             chat ON chat_message_join.chat_id = chat.rowid
-        LEFT JOIN 
+        JOIN 
             handle ON handle.id = chat.chat_identifier
         WHERE 
-            message.text IS NOT NULL -- Ensure message has text
-            AND handle.id IS NOT NULL -- Ensure handle exists
-            AND message.date >= ? -- Filter by date (start of the year)
-        GROUP BY 
-            handle.id -- Group by chat handle
-        ORDER BY 
-            sent_count + received_count DESC -- Order by message count
-        LIMIT 5; -- Limit to top 5 chats
+            message.text IS NOT NULL
+            AND message.date >= ?
         """,
         (start_of_year_timestamp,)
     )
 
-    # Fetch and display the results
-    top_chats = cursor.fetchall()
+    messages = cursor.fetchall()
 
-    print("\nTop 5 Chats This Year:")
-    for handle, sent_count, received_count in top_chats:
-        print(f"{handle}: {sent_count + received_count} total messages. {sent_count} sent, {received_count} received.")
+    # Dictionary to store messages and sentiment scores by handle
+    handle_messages = {}
+
+    # Organize messages by handle id
+    for handle, text, is_from_me in messages:
+        if not text:  # Skip empty or None messages
+            continue
+        if handle not in handle_messages:
+            handle_messages[handle] = {'messages': [], 'sentiment_scores': []}
+        handle_messages[handle]['messages'].append(text)
+        
+        # Get sentiment score for the message
+        sentiment_score = sia.polarity_scores(text)['compound']
+        handle_messages[handle]['sentiment_scores'].append(sentiment_score)
+
+    # Create a list of handles with their message count and average sentiment score
+    handle_message_counts = []
+
+    for handle, data in handle_messages.items():
+        # Calculate average sentiment score for all messages of the handle
+        avg_sentiment_score = mean(data['sentiment_scores'])
+        positivity = "Positive" if avg_sentiment_score > 0 else "Negative" if avg_sentiment_score < 0 else "Neutral"
+        
+        # Store handle, message count, and average sentiment score for sorting
+        handle_message_counts.append((handle, len(data['messages']), positivity, avg_sentiment_score))
+
+    # Sort the handles by message count (in descending order)
+    handle_message_counts.sort(key=lambda x: x[1], reverse=True)
+
+    # Get the top 10 handles by message count
+    top_10_handles = handle_message_counts[:10]
+
+    # Print the top 10 handles based on message count
+    print("\nTop 10 Handles by Message Count:")
+    for handle, message_count, positivity, avg_sentiment_score in top_10_handles:
+        print(f"{handle}: {message_count} messages, {positivity} (Avg Sentiment Score: {avg_sentiment_score:.2f})")
 
 except Exception as e:
-    print(f"Error fetching top chats: {e}")
+    print(f"Error: {e}")
 
 finally:
-    # Ensure the database connection is closed
     conn.close()
