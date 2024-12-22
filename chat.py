@@ -144,7 +144,8 @@ try:
     # Calculate politeness scores for each handle
     politeness_scores = {}
     blend_rates = {}
-    for handle, data in handle_messages[:10].items():
+    for handle, message_count, positivity, avg_sentiment_score in top_10_handles:
+        data = handle_messages[handle]
         messages = [msg[0] for msg in data['messages']]
         my_messages = [msg[0] for msg in data['messages'] if msg[1] == 1]
         their_messages = [msg[0] for msg in data['messages'] if msg[1] == 0]
@@ -154,13 +155,16 @@ try:
 
     # Output politeness scores
     print("\nPoliteness Ratings:")
-    for handle, score in politeness_scores[:3].items():
+    for handle, score in politeness_scores.items():
         print(f"{handle}: {score:.2f}")
 
-    # Output blend rates
+    # Output blend rates, ordered from greatest to least
     print("\nBlend Rates (Jaccard Similarity):")
-    for handle, rate in blend_rates.items():
+    sorted_blend_rates = sorted(blend_rates.items(), key=lambda x: x[1], reverse=True)
+
+    for handle, rate in sorted_blend_rates:
         print(f"{handle}: {rate:.2f}")
+
 
 except Exception as e:
     print(f"Error: {e}")
