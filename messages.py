@@ -102,32 +102,6 @@ try:
     target = input("\nIs there any specific word you want to see how much you used? ").lower()
     print(f"'{target}' was used {fd[target]} times.")
 
-    # Prepare data for LDA
-    processed_messages = [
-        [re.sub(r'\W+', '', word.lower()) for word in text.split() if word.lower() not in stop_words and len(word) > 2]
-        for text, *_ in messages
-    ]
-
-    # Filter out empty messages
-    processed_messages = [msg for msg in processed_messages if msg]
-
-    # Create a dictionary and corpus
-    dictionary = Dictionary(processed_messages)
-    corpus = [dictionary.doc2bow(text) for text in processed_messages]
-
-    # Train LDA model
-    num_topics = 5
-    lda_model = LdaModel(corpus, num_topics=num_topics, id2word=dictionary, passes=10, random_state=42)
-
-    # Visualize LDA topics
-    lda_vis = gensimvis.prepare(lda_model, corpus, dictionary)
-    pyLDAvis.save_html(lda_vis, 'lda_visualization.html')
-    print("LDA visualization saved as 'lda_visualization.html'.")
-
-    # Display topics
-    for idx, topic in lda_model.print_topics():
-        print(f"Topic {idx}: {topic}")
-
 except Exception as e:
     print(f"Error accessing database: {e}")
 finally:

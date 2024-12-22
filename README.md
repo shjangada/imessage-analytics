@@ -125,6 +125,7 @@ python analyze_messages.py
 * Analysis depth depends on local database completeness
 * Performance may vary with large message volumes
 * Some message types may not be properly categorized
+* iMessage database does not store contact names
 
 ## Future Enhancements
 
