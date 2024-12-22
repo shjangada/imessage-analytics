@@ -2,27 +2,26 @@ import sqlite3
 from datetime import datetime, timedelta
 import nltk
 from nltk.corpus import stopwords
-import string
+
 
 # Download necessary NLTK data
 nltk.download('stopwords')
-#nltk.download('wordnet')
 
 # Set stop words (you may want to adjust or expand this)
 stop_words = set(stopwords.words('english'))
 stop_words.update([
     "know", "yes", "much", "okay", "right", "thing", "lot", 
     "got", "make", "even", "say", "today", "still", "last", "things", "first", 
-    "makes", "wait", "today", "back", "see", "really", "gonna", "think",
+    "makes", "wait", "back", "see", "really", "gonna", "think",
     "need", "wanna", "going", "stuff", "idk", "abt",
-    "wait", "last", "right", "stuff", "things", "make", "back", "right", "going", "yeah", "yup"
+    "yeah", "yup"
 ])
-reaction_keywords = ["Loved", "Liked", "Emphasized", "Laughed at", "Disliked"]  # Example keywords
+reaction_keywords = ["Loved", "Liked", "Emphasized", "Laughed at", "Disliked"]
 
 time_to_read = 0
 
 # Path to iMessage database
-username = "shreyajangada"  # for testing purposes
+username = "shreyajangada"  # Update this with your username
 DB_PATH = f"/Users/{username}/Library/Messages/chat.db"
 
 try:
@@ -67,7 +66,9 @@ try:
                     word_lower = word.lower()
                     if "’" in word_lower or word_lower in stop_words or len(word_lower) < 3:
                         continue
-                    words_list.append(word_lower)
+                    word_clean = re.sub(r'\W+', '', word_lower)  # Remove non-alphanumeric characters
+                    if word_clean:
+                        words_list.append(word_clean)
 
             # Calculate time to read if applicable
             if is_from_me and date_delivered is not None and date_read is not None:
@@ -79,11 +80,10 @@ try:
             print(f"Error processing message {i + 1}: {e}")
 
     print(f"\nTotal messages this year: {total_messages}")
-    print(f"\nMessages sent by you: {from_me} ({from_me/total_messages*100:.2f}%) of total messages.")
+    print(f"Messages sent by you: {from_me} ({from_me/total_messages*100:.2f}%) of total messages.")
 
     # Create a frequency distribution using NLTK's FreqDist
     fd = nltk.FreqDist(words_list)
-
 
     # Display frequency distribution in tabular format
     print("\nFrequency Distribution Table (Top 10):")
@@ -93,7 +93,6 @@ try:
     avg_text_length = sum(len(text.split()) for text, *_ in messages) / total_messages
     print(f"\nAverage text length: {avg_text_length:.2f} words.")
 
-
     # Curse word count
     curse_list = ["fuck", "damn", "shit", "ass", "crap", "bitch", "dumbass", "fucking", "asshole", "bastard", "pissed", "motherfucker"]
     curse_count = sum(fd[word] for word in curse_list if word in fd)
@@ -102,6 +101,32 @@ try:
     # Optionally, query a specific word
     target = input("\nIs there any specific word you want to see how much you used? ").lower()
     print(f"'{target}' was used {fd[target]} times.")
+
+    # Prepare data for LDA
+    processed_messages = [
+        [re.sub(r'\W+', '', word.lower()) for word in text.split() if word.lower() not in stop_words and len(word) > 2]
+        for text, *_ in messages
+    ]
+
+    # Filter out empty messages
+    processed_messages = [msg for msg in processed_messages if msg]
+
+    # Create a dictionary and corpus
+    dictionary = Dictionary(processed_messages)
+    corpus = [dictionary.doc2bow(text) for text in processed_messages]
+
+    # Train LDA model
+    num_topics = 5
+    lda_model = LdaModel(corpus, num_topics=num_topics, id2word=dictionary, passes=10, random_state=42)
+
+    # Visualize LDA topics
+    lda_vis = gensimvis.prepare(lda_model, corpus, dictionary)
+    pyLDAvis.save_html(lda_vis, 'lda_visualization.html')
+    print("LDA visualization saved as 'lda_visualization.html'.")
+
+    # Display topics
+    for idx, topic in lda_model.print_topics():
+        print(f"Topic {idx}: {topic}")
 
 except Exception as e:
     print(f"Error accessing database: {e}")
