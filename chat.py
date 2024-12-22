@@ -8,11 +8,13 @@ from nltk import pos_tag
 from statistics import mean
 
 # Initialize NLTK tools and sentiment analyzer
+"""
 nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('averaged_perceptron_tagger')
 nltk.download('vader_lexicon')
 nltk.download('averaged_perceptron_tagger_eng')
+"""
 sia = SentimentIntensityAnalyzer()
 
 # Path to the database
